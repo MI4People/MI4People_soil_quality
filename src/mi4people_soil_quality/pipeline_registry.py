@@ -3,7 +3,7 @@ from typing import Dict
 
 from kedro.pipeline import Pipeline, pipeline
 
-from pipelines import test_pipeline as tp
+from mi4people_soil_quality.pipelines import test_pipeline as tp
 
 
 def register_pipelines() -> Dict[str, Pipeline]:

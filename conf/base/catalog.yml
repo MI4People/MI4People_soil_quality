@@ -6,3 +6,32 @@
 raw_targets_and_inputs:
   type: pandas.CSVDataSet
   filepath: data/01_raw/Target_and_input.csv
+
+## iris pipeline
+raw_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/iris.csv
+
+encoded_data:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/encoded_data.csv
+  load_args:
+    sep: ','
+  save_args:
+    index: False
+
+train_x:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/train_x.csv
+
+train_y:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/train_y.csv
+
+test_x:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/test_x.csv
+
+test_y:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/test_y.csv

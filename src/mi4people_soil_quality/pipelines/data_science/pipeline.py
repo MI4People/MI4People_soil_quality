@@ -26,29 +26,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Project pipelines."""
+"""
+This is a boilerplate pipeline 'data_science'
+generated using Kedro 0.18.2
+"""
 
-from typing import Dict
+"""Example code for the nodes in the example pipeline. This code is meant
+just for illustrating basic Kedro features.
+Delete this when you start working on your own Kedro project.
+"""
 
-from kedro.pipeline import Pipeline, pipeline
+from kedro.pipeline import Pipeline, node, pipeline
 
-from mi4people_soil_quality.pipelines import test_pipeline as tp
-from mi4people_soil_quality.pipelines import data_engineering as de
-from mi4people_soil_quality.pipelines import data_science as ds
+from .nodes import predict, report_accuracy, train_model
 
 
-def register_pipelines() -> Dict[str, Pipeline]:
-    """Register the project's pipelines.
-
-    Returns:
-        A mapping from a pipeline name to a ``Pipeline`` object.
-    """
-    test_pipeline = tp.create_pipeline()
-    data_engineering_pipeline = de.create_pipeline()
-    data_science_pipeline = ds.create_pipeline()
-    return {
-        "tp": test_pipeline,
-        "de": data_engineering_pipeline,
-        "ds": data_science_pipeline,
-        "__default__": test_pipeline + data_engineering_pipeline + data_science_pipeline
-    }
+def create_pipeline(**kwargs) -> Pipeline:
+    return pipeline(
+        [
+            node(
+                train_model,
+                ["train_x", "train_y", "parameters"],
+                "model",
+                name="train",
+            ),
+            node(
+                predict,
+                dict(model="model", test_x="test_x"),
+                "predictions",
+                name="predict",
+            ),
+            node(
+                report_accuracy,
+                ["predictions", "test_y"],
+                None,
+                name="report",
+            ),
+        ]
+    )

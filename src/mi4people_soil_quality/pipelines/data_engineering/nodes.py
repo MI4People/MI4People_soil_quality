@@ -26,29 +26,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Project pipelines."""
+"""
+This is a boilerplate pipeline 'data_engineering'
+generated using Kedro 0.18.2
+"""
 
-from typing import Dict
+from typing import Any, Dict, List
 
-from kedro.pipeline import Pipeline, pipeline
-
-from mi4people_soil_quality.pipelines import test_pipeline as tp
-from mi4people_soil_quality.pipelines import data_engineering as de
-from mi4people_soil_quality.pipelines import data_science as ds
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
-def register_pipelines() -> Dict[str, Pipeline]:
-    """Register the project's pipelines.
+def get_classes(data: pd.DataFrame, target_col: str) -> List[str]:
+    """Node for getting the classes from the Iris data set."""
+    return sorted(data[target_col].unique())
 
-    Returns:
-        A mapping from a pipeline name to a ``Pipeline`` object.
+
+def encode_categorical_columns(data: pd.DataFrame, target_col: str) -> pd.DataFrame:
+    """Node for encoding the categorical columns in the Iris data set."""
+
+    return pd.get_dummies(data, columns=[target_col], prefix="", prefix_sep="")
+
+
+def split_data(data: pd.DataFrame, test_data_ratio: float, classes: list) -> Dict[str, Any]:
+    """Node for splitting the classical Iris data set into training and test
+    sets, each split into features and labels.
     """
-    test_pipeline = tp.create_pipeline()
-    data_engineering_pipeline = de.create_pipeline()
-    data_science_pipeline = ds.create_pipeline()
-    return {
-        "tp": test_pipeline,
-        "de": data_engineering_pipeline,
-        "ds": data_science_pipeline,
-        "__default__": test_pipeline + data_engineering_pipeline + data_science_pipeline
-    }
+
+    X, y = data.drop(columns=classes), data[classes]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_data_ratio)
+
+    # When returning many variables, it is a good practice to give them names:
+    return dict(
+        train_x=X_train,
+        train_y=y_train,
+        test_x=X_test,
+        test_y=y_test,
+    )

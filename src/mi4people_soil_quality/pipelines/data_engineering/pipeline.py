@@ -26,29 +26,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Project pipelines."""
+"""
+This is a boilerplate pipeline 'data_engineering'
+generated using Kedro 0.18.2
+"""
 
-from typing import Dict
+from kedro.pipeline import Pipeline, node
 
-from kedro.pipeline import Pipeline, pipeline
-
-from mi4people_soil_quality.pipelines import test_pipeline as tp
-from mi4people_soil_quality.pipelines import data_engineering as de
-from mi4people_soil_quality.pipelines import data_science as ds
+from .nodes import get_classes, encode_categorical_columns, split_data
 
 
-def register_pipelines() -> Dict[str, Pipeline]:
-    """Register the project's pipelines.
-
-    Returns:
-        A mapping from a pipeline name to a ``Pipeline`` object.
-    """
-    test_pipeline = tp.create_pipeline()
-    data_engineering_pipeline = de.create_pipeline()
-    data_science_pipeline = ds.create_pipeline()
-    return {
-        "tp": test_pipeline,
-        "de": data_engineering_pipeline,
-        "ds": data_science_pipeline,
-        "__default__": test_pipeline + data_engineering_pipeline + data_science_pipeline
-    }
+def create_pipeline(**kwargs):
+    return Pipeline(
+        [
+            node(
+                get_classes,
+                ["raw_data", "params:target_col"],
+                "classes",
+                name='get_classes',
+            ),
+            node(
+                encode_categorical_columns,
+                ['raw_data', 'params:target_col'],
+                'encoded_data',
+                name='encode_categorical_columns',
+            ),
+            node(
+                split_data,
+                ["encoded_data", "params:test_data_ratio", "classes"],
+                dict(
+                    train_x="train_x",
+                    train_y="train_y",
+                    test_x="test_x",
+                    test_y="test_y",
+                ),
+                name="split",
+            )
+        ]
+    )

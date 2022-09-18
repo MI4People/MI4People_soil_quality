@@ -16,10 +16,3 @@ sources:
     driver: shapefile
     args:
       urlpath: '{{ CATALOG_DIR }}data/intermediate/aux/sol_chem_pnts_horizons_africa_chip_geometries.gpkg'
-
-  # This cant be loaded by intake currently due to mixed data types
-  corrupted_sites:
-    description: csv of the samples whose position was altered due to privacy reason and are unusable
-    driver: csv
-    args:
-      urlpath: '{{ CATALOG_DIR }}data/raw/RaCA2016_and_ISCND_points.csv'

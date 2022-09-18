@@ -1,0 +1,19 @@
+# local package
+# -e .
+
+
+# external requirements
+# install from github: 
+# pip install git+https://github.com/benmack/geoimgchips
+geoimgchips
+
+
+awscli
+black[jupyter]
+click
+Sphinx
+coverage
+flake8
+geopandas
+python-dotenv>=0.5.1
+tqdm

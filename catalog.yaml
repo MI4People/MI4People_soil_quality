@@ -1,0 +1,18 @@
+metadata:
+  version: 1
+  name: MI4People_soil_quality catalog
+  description: MI4People_soil_quality catalog
+
+sources:
+  
+  soilchem_africa:
+    description: Africa subset of ess soilchem.
+    driver: shapefile
+    args:
+      urlpath: '{{ CATALOG_DIR }}data/intermediate/target/sol_chem_pnts_horizons_africa.gpkg'
+  
+  soilchem_africa_chip_geometries:
+    description: Chip geometries for Africa subset of ess soilchem.
+    driver: shapefile
+    args:
+      urlpath: '{{ CATALOG_DIR }}data/intermediate/aux/sol_chem_pnts_horizons_africa_chip_geometries.gpkg'

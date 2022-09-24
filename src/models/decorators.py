@@ -44,7 +44,21 @@ def find_decorated_functions_in_this_dir(decorator_name=None):
     return decorated_functions
 
 
-def ingestion_decorator(f):
+def train_decorator(f):
+    # This decorator has some assertions for all in- and outputs at runtime
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        # TODO write some assertion for all inputs for all functions with this decorator here
+        assert True
+        out = f(*args, **kwargs)
+        # TODO write some assertion for all outputs for all functions with this decorator here
+        assert True
+        return out
+
+    return decorator
+
+
+def predict_decorator(f):
     # This decorator has some assertions for all in- and outputs at runtime
     @wraps(f)
     def decorator(*args, **kwargs):
@@ -59,6 +73,7 @@ def ingestion_decorator(f):
 
 
 def test_decorated_functions():
+    # TODO this should differentiate by decorator as there are multiple in this dir
     functions = find_decorated_functions_in_this_dir()
     # TODO write some other tests for all decorated functions to test edge cases
 

@@ -44,7 +44,7 @@ def find_decorated_functions_in_this_dir(decorator_name=None):
     return decorated_functions
 
 
-def ingestion_decorator(f):
+def viz_decorator(f):
     # This decorator has some assertions for all in- and outputs at runtime
     @wraps(f)
     def decorator(*args, **kwargs):

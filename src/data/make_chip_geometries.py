@@ -45,7 +45,7 @@ def main(overwrite):
     # subset of columns from the source file to keep for the destination files
     # default `None` will keep all
     # if given, geometry needs to be included
-    src_keep_columns = ["olc_id", "geometry"]
+    src_keep_columns = ["olc_id", "GID_0", "geometry"]
 
     # overwrite destination files if they exist
     overwrite = True

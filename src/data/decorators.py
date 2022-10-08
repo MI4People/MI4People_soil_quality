@@ -2,6 +2,8 @@ import inspect
 import importlib
 from pathlib import Path
 from functools import wraps
+import pandas as pd
+import numpy as np
 
 
 def find_decorated_functions_in_this_dir(decorator_name=None):
@@ -44,7 +46,7 @@ def find_decorated_functions_in_this_dir(decorator_name=None):
     return decorated_functions
 
 
-def ingestion_decorator(f):
+def csv_ingestion_decorator(f):
     # This decorator has some assertions for all in- and outputs at runtime
     @wraps(f)
     def decorator(*args, **kwargs):
@@ -53,6 +55,23 @@ def ingestion_decorator(f):
         out = f(*args, **kwargs)
         # TODO write some assertion for all outputs for all functions with this decorator here
         assert True
+        assert isinstance(out, pd.Dataframe)
+        return out
+
+    return decorator
+
+
+def img_ingestion_decorator(f):
+    # This decorator has some assertions for all in- and outputs at runtime
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        # TODO write some assertion for all inputs for all functions with this decorator here
+        assert True
+        out = f(*args, **kwargs)
+        # TODO write some assertion for all outputs for all functions with this decorator here
+        assert isinstance(out, np.array)
+        assert len(out.shape) == 3
+        # TODO number of bands
         return out
 
     return decorator

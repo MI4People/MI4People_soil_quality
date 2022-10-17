@@ -58,11 +58,6 @@ def train_decorator(f):
     return decorator
 
 
-# TODO
-def mlflow_training(f):
-    pass
-
-
 def predict_decorator(f):
     # This decorator has some assertions for all in- and outputs at runtime
     @wraps(f)

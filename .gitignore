@@ -88,5 +88,9 @@ target/
 # Mypy cache
 .mypy_cache/
 
-# Credentials for managed mysql
+# Credentials for managed mysql & s3
 aws_credentials.yaml
+
+# Artifacts of manual mlflow-logging
+/mlruns
+.pkl

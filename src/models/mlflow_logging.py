@@ -24,6 +24,8 @@ def create_or_set_experiment(experiment_name: str):
     )
     set_s3_credentials(credentials)
     s3_bucket = "s3://mi4people-soil-project/mlflow-artifacts/"
+
+    mlflow.end_run()
     existing_experiment = mlflow.get_experiment_by_name(experiment_name)
     if not existing_experiment:
         print("Creating new Mlflow-Experiment.")

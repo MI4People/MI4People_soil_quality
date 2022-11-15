@@ -51,11 +51,9 @@ def csv_ingestion_decorator(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         # TODO write some assertion for all inputs for all functions with this decorator here
-        assert True
         out = f(*args, **kwargs)
         # TODO write some assertion for all outputs for all functions with this decorator here
-        assert True
-        assert isinstance(out, pd.Dataframe)
+        assert isinstance(out, (pd.DataFrame, pd.Series))
         return out
 
     return decorator

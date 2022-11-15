@@ -51,8 +51,8 @@ def img_preprocessing_decorator(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         # TODO write some assertion for all inputs for all functions with this decorator here
-        assert isinstance(out, np.array)
-        assert len(out.shape) == 3
+        # assert isinstance(out, np.array)
+        # assert len(out.shape) == 3
         out = f(*args, **kwargs)
         # TODO write some assertion for all outputs for all functions with this decorator here
         assert isinstance(out, np.array)
@@ -68,10 +68,9 @@ def csv_preprocessing_decorator(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         # TODO write some assertion for all inputs for all functions with this decorator here
-        assert isinstance(out, pd.Dataframe)
         out = f(*args, **kwargs)
         # TODO write some assertion for all outputs for all functions with this decorator here
-        assert isinstance(out, pd.Dataframe)
+        assert isinstance(out, (pd.DataFrame, pd.Series))
         return out
 
     return decorator

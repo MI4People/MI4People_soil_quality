@@ -95,3 +95,5 @@ aws_credentials.yaml
 /mlruns
 *.pkl
 *.h5
+# secrets
+.secrets/

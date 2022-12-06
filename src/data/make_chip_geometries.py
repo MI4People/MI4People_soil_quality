@@ -28,12 +28,15 @@ def main(overwrite):
         project_dir
         / "data/intermediate/aux/sol_chem_pnts_horizons_africa_chip_geometries.gpkg"
     )
+    # parquet because i do not manage to read the geopackage from s3 with fsspec
+    path_soilchem_africa_chip_geometries_parquet = (
+        project_dir
+        / "data/intermediate/aux/sol_chem_pnts_horizons_africa_chip_geometries.parquet"
+    )
 
     if not overwrite and path_soilchem_africa_chip_geometries.exists():
         logger.info(f"stopping script - {path_soilchem_africa_chip_geometries} exists")
         return 0
-
-    soilchem_africa = gpd.read_file(path_soilchem_africa)
 
     # size of the chip
     # e.g. 1280 => 256 x 256 10m pixels, size can differ if res != 10
@@ -74,6 +77,7 @@ def main(overwrite):
     logger.info(f"writing {path_soilchem_africa_chip_geometries}")
     Path(path_soilchem_africa_chip_geometries).parent.mkdir(exist_ok=True)
     chips.to_file(path_soilchem_africa_chip_geometries)
+    chips.to_parquet(path=path_soilchem_africa_chip_geometries_parquet)
 
     return 0
 

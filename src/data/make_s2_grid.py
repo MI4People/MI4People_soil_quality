@@ -7,12 +7,15 @@ import geopandas as gpd
 from pathlib import Path
 import requests
 import fiona
-fiona.drvsupport.supported_drivers['LIBKML'] = 'rw' # enable KML support which is disabled by default
+
+fiona.drvsupport.supported_drivers[
+    "LIBKML"
+] = "rw"  # enable KML support which is disabled by default
 
 
 @click.command()
 # @click.option("overwrite", type=bool, default=False)
-def main(): # overwrite
+def main():  # overwrite
     """Runs data processing scripts to turn raw data from (../raw) into
     cleaned data ready to be analyzed (saved in ../processed).
     """
@@ -24,7 +27,10 @@ def main(): # overwrite
     project_dir = Path(__file__).resolve().parents[2]
 
     url_kml = "https://sentinel.esa.int/documents/247904/1955685/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"
-    path_kml = project_dir / "data/raw/aux/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"
+    path_kml = (
+        project_dir
+        / "data/raw/aux/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"
+    )
     path_s2_grid = project_dir / "data/intermediate/aux/s2_tile_grid.gpkg"
     path_s2_grid_africa = project_dir / "data/intermediate/aux/s2_tile_grid_africa.gpkg"
     path_gadm_africa = project_dir / "data/intermediate/aux/gadm_410-levels_africa.gpkg"
@@ -46,12 +52,14 @@ def main(): # overwrite
             logger.info(f"reading {path_kml}")
             s2_tiles = gpd.read_file(path_kml)
             logger.info(f"extracting polygon")
-            s2_tiles = s2_tiles.rename({'geometry': 'geometry_collection'}, axis=1)
-            s2_tiles['geometry'] = s2_tiles['geometry_collection'].apply(lambda x: x.geoms[0])
+            s2_tiles = s2_tiles.rename({"geometry": "geometry_collection"}, axis=1)
+            s2_tiles["geometry"] = s2_tiles["geometry_collection"].apply(
+                lambda x: x.geoms[0]
+            )
             logger.info(f"Subsetting to geometry and Name fields")
-            s2_tiles = s2_tiles[['geometry', 'Name']]
+            s2_tiles = s2_tiles[["geometry", "Name"]]
             logger.info(f"writing {path_s2_grid}")
-            s2_tiles.to_file(path_s2_grid, driver='GPKG')
+            s2_tiles.to_file(path_s2_grid, driver="GPKG")
         else:
             logger.info(f"reading {path_s2_grid}")
             s2_tiles = gpd.read_file(path_s2_grid)
@@ -61,10 +69,13 @@ def main(): # overwrite
         gdf_africa = gpd.read_file(path_gadm_africa)
 
         logger.info("subsetting s2 tile grid to Africa")
-        s2_tiles_africa = gpd.sjoin(s2_tiles, gdf_africa[['geometry']], how='inner') \
-            .drop('index_right', axis=1).drop_duplicates()
+        s2_tiles_africa = (
+            gpd.sjoin(s2_tiles, gdf_africa[["geometry"]], how="inner")
+            .drop("index_right", axis=1)
+            .drop_duplicates()
+        )
         logger.info(f"writing {path_s2_grid_africa}")
-        s2_tiles_africa.to_file(path_s2_grid_africa, driver='GPKG')
+        s2_tiles_africa.to_file(path_s2_grid_africa, driver="GPKG")
     else:
         logger.info(f"already exists {path_s2_grid_africa}")
 

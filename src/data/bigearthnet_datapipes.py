@@ -5,7 +5,7 @@ import fsspec
 from PIL import Image
 from src.globals import LABELS_TO_INDS
 from ingestion import combine_and_resize_bands
-from src.features.img_engineering import get_first_n_pcs
+from src.data.img_engineering import get_first_n_pcs
 
 
 """ Functions for torchdata datapipes specific for the bigearthnet dataset as well as pipeline definitions.

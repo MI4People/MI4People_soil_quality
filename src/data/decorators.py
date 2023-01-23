@@ -5,6 +5,13 @@ from functools import wraps
 import pandas as pd
 import numpy as np
 
+import inspect
+import importlib
+from pathlib import Path
+from functools import wraps
+import numpy as np
+import pandas as pd
+
 
 def find_decorated_functions_in_this_dir(decorator_name=None):
     """This parses all .py-files in the dir THIS FILE is located and
@@ -44,6 +51,36 @@ def find_decorated_functions_in_this_dir(decorator_name=None):
                     )
 
     return decorated_functions
+
+
+def img_preprocessing_decorator(f):
+    # This decorator has some assertions for all in- and outputs at runtime
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        # TODO write some assertion for all inputs for all functions with this decorator here
+        # assert isinstance(out, np.array)
+        # assert len(out.shape) == 3
+        out = f(*args, **kwargs)
+        # TODO write some assertion for all outputs for all functions with this decorator here
+        assert isinstance(out, np.array)
+        assert len(out.shape) == 3
+        # TODO datatype of pixels
+        return out
+
+    return decorator
+
+
+def csv_preprocessing_decorator(f):
+    # This decorator has some assertions for all in- and outputs at runtime
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        # TODO write some assertion for all inputs for all functions with this decorator here
+        out = f(*args, **kwargs)
+        # TODO write some assertion for all outputs for all functions with this decorator here
+        assert isinstance(out, (pd.DataFrame, pd.Series))
+        return out
+
+    return decorator
 
 
 def csv_ingestion_decorator(f):

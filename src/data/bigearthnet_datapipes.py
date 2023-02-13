@@ -4,7 +4,7 @@ import json
 import fsspec
 from PIL import Image
 from src.globals import LABELS_TO_INDS
-from ingestion import combine_and_resize_bands
+from src.data.ingestion import combine_and_resize_bands
 from src.data.img_engineering import get_first_n_pcs
 
 
@@ -65,6 +65,17 @@ def get_label_inds(label_list):
 def pca_on_label_and_data(combined_image):
     # Perform PCA on a single array of shape (height, width, bands) to (height, width, 3).
     return get_first_n_pcs(combined_image, num_components=3)
+
+
+def get_bigeartnet_label_pipe(folders):
+    # Stream only annotations-jsons
+    pipe = dp.iter.IterableWrapper(folders)
+    pipe = pipe.list_files_by_fsspec()
+    pipe = pipe.groupby(group_key_fn=group_key_by_folder, group_size=13)
+    pipe = pipe.map(chunk_to_dataloader_dict)
+    pipe = pipe.map(read_json_from_path, input_col="label")
+    pipe = pipe.map(lambda x: x["label"])
+    return pipe
 
 
 def get_bigearth_pca_pipe(folders):

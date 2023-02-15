@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import torchdata.datapipes as dp
 import json
 import fsspec
@@ -62,6 +63,13 @@ def get_label_inds(label_list):
     return [LABELS_TO_INDS[label] for label in label_list]
 
 
+def labels_to_multi_hot_vector(labels):
+    # converts multi-label lists of indices to multi-hot encoded vector of length 43
+    target = np.zeros(shape=(43), dtype=np.float32)
+    target[labels] = 1
+    return target
+
+
 def pca_on_label_and_data(combined_image):
     # Perform PCA on a single array of shape (height, width, bands) to (height, width, 3).
     return get_first_n_pcs(combined_image, num_components=3)
@@ -96,6 +104,7 @@ def get_bigearth_pca_pipe(folders):
     img_pipe = img_pipe.map(read_json_from_path, input_col="label")
     img_pipe = img_pipe.map(get_labels, input_col="label")
     img_pipe = img_pipe.map(get_label_inds, input_col="label")
+    img_pipe = img_pipe.map(labels_to_multi_hot_vector, input_col="label")
     img_pipe = img_pipe.map(read_imgs_from_paths, input_col="data")
     img_pipe = img_pipe.map(combine_and_resize_bands, input_col="data")
     img_pipe = img_pipe.map(pca_on_label_and_data, input_col="data")

@@ -10,7 +10,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
-
+import os
 
 import torch
 from torchvision import datasets, models, transforms
@@ -21,22 +21,19 @@ import torch.optim as optim
 
 import torchvision
 
-
-# Kaggle Kernel-dependent
-# input_path = "../input/alien_vs_predator_thumbnails/data/"
-
 import src.data.bigearthnet_datapipes as be_pipes
 import src.data.general_datapipes as pipes
 from src.globals import LABELS_TO_INDS
+from src.infrastructure.aws_infrastructure import upload_file_to_s3, download_from_s3, spot_instance_terminating
 
-folders = pipes.get_s3_folder_content()
-folders = list(folders)
 
 # ### 2. Create PyTorch data generators
 
+# TODO
 # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 #                                  std=[0.229, 0.224, 0.225])
 
+# TODO Augmentations in dataloader?
 # data_transforms = {
 #     'train':
 #     transforms.Compose([
@@ -74,7 +71,9 @@ folders = list(folders)
 #                                 num_workers=0)  # for Kaggle
 # }
 
-
+folders = pipes.get_s3_folder_content()
+folders = list(folders)
+print(folders)
 num_classes = len(LABELS_TO_INDS.keys())
 
 datapipe = be_pipes.get_bigearth_pca_pipe(folders[:40])
@@ -82,15 +81,14 @@ train_pipe, test_pipe = pipes.split_pipe_to_train_test(datapipe, 0.2)
 print(len(list(train_pipe)))
 print("-------------------")
 print(len(list(test_pipe)))
+# TODO persist? Traintestval-split
 dataloaders = {
     "train": torch.utils.data.DataLoader(dataset=train_pipe, batch_size=2),
     "test": torch.utils.data.DataLoader(dataset=test_pipe, batch_size=2),
 }
 
 # ### 3. Create the network
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device
 
 model = models.resnet50(pretrained=True).to(device)
 
@@ -104,8 +102,12 @@ model.fc = nn.Sequential(
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(model.fc.parameters())
 
+
 # ### 4. Train the model
-def train_model(model, criterion, optimizer, num_epochs=3):
+def train_model(model, criterion, optimizer, num_epochs=1, starting_epoch=1, state_dict=None):
+    if state_dict:
+        model.load_state_dict(dl_model_path)
+    # TODO set epoch to that of loaded dict
     for epoch in range(num_epochs):
         print("Epoch {}/{}".format(epoch + 1, num_epochs))
         print("-" * 10)
@@ -120,6 +122,13 @@ def train_model(model, criterion, optimizer, num_epochs=3):
             running_corrects = 0
 
             for sample in dataloaders[phase]:
+                # if spot_instance_terminating():
+                    # logging.warning("Spot instances will be terminated soon. Saving weights to s3.")
+                    # model_path = os.path.join(os.getcwd(), 'models/weights.h5')
+                    # torch.save(model_trained.state_dict(), model_path)
+                    # upload_file_to_s3(bucket="mi4people-soil-project", local_path=model_path, remote_path=f"pytorch_models/ben_{epoch}.h5")
+                    # TODO further cleanup: shut down?
+
                 inputs = sample["data"]
                 labels = sample["label"]
                 inputs = inputs.to(device, dtype=torch.float)
@@ -134,6 +143,7 @@ def train_model(model, criterion, optimizer, num_epochs=3):
                     loss.backward()
                     optimizer.step()
 
+                # TODO running metric
                 _, preds = torch.max(outputs, 1)
                 running_loss += loss.item() * inputs.size(0)
                 # running_corrects += torch.sum(preds == labels.data)
@@ -147,51 +157,36 @@ def train_model(model, criterion, optimizer, num_epochs=3):
     return model
 
 
-# There is some error (even though the same version work on my own computer):
-#
-# > RuntimeError: DataLoader worker (pid 56) is killed by signal: Bus error. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
-# > RuntimeError: DataLoader worker (pid 59) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
-#
-# See [this issue](https://github.com/pytorch/pytorch/issues/5301) and [that thread](https://discuss.pytorch.org/t/dataloader-randomly-crashes-after-few-epochs/20433/2). Setting `num_workers=0` in `DataLoader` solved it.
-
-model_trained = train_model(model, criterion, optimizer, num_epochs=3)
-
+# model_trained = train_model(model, criterion, optimizer, num_epochs=1)
 
 # ### 5. Save and load the model
+# model_path = os.path.join(os.getcwd(), 'models/weights.h5')
+# torch.save(model_trained.state_dict(), model_path)
+# upload_file_to_s3(bucket="mi4people-soil-project", local_path=model_path, remote_path="pytorch_models/weights.h5")
 
-# !mkdir models
-# !mkdir models/pytorch
+dl_model_path = os.path.join(os.getcwd(), 'models/dl_weights.h5')
+# download_from_s3(bucket="mi4people-soil-project", local_path=dl_model_path, remote_path="pytorch_models/weights.h5")
 
-# torch.save(model_trained.state_dict(), 'models/pytorch/weights.h5')
-
-# model = models.resnet50(pretrained=False).to(device)
-# model.fc = nn.Sequential(
-#                nn.Linear(2048, 128),
-#                nn.ReLU(inplace=True),
-#                nn.Linear(128, 2)).to(device)
-# model.load_state_dict(torch.load('models/pytorch/weights.h5'))
+model = models.resnet50(pretrained=False).to(device)
+model.fc = nn.Sequential(
+    nn.Linear(2048, 128), nn.ReLU(inplace=True), nn.Linear(128, 43)
+).to(device)
+model.load_state_dict(torch.load(dl_model_path))
 
 # # ### 6. Make predictions on sample test images
+for sample in dataloaders["test"]:
+    inputs = sample["data"]
+    inputs = inputs.to(device, dtype=torch.float)
+    labels = sample["label"]
+    pred_logits_tensor = model(inputs.to(device))
+    print(pred_logits_tensor)
+    pred_probs = F.softmax(pred_logits_tensor, dim=1).cpu().data.numpy()
+    print(pred_probs)
 
-# validation_img_paths = ["validation/alien/11.jpg",
-#                         "validation/alien/22.jpg",
-#                         "validation/predator/33.jpg"]
-# img_list = [Image.open(input_path + img_path) for img_path in validation_img_paths]
 
-# validation_batch = torch.stack([data_transforms['validation'](img).to(device)
-#                                 for img in img_list])
-
-# pred_logits_tensor = model(validation_batch)
-# pred_logits_tensor
-
-# pred_probs = F.softmax(pred_logits_tensor, dim=1).cpu().data.numpy()
-# pred_probs
-
-# fig, axs = plt.subplots(1, len(img_list), figsize=(20, 5))
-# for i, img in enumerate(img_list):
-#     ax = axs[i]
-#     ax.axis('off')
-#     ax.set_title("{:.0f}% Alien, {:.0f}% Predator".format(100*pred_probs[i,0],
-#                                                             100*pred_probs[i,1]))
-#     ax.imshow(img)
-
+# TODOs after local todos:
+# use mlflow callback
+# How/where to run online
+# spot-instance callbacks
+# save weights to s3 in callback
+# parametrization

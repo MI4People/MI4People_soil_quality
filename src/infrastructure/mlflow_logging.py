@@ -27,7 +27,7 @@ def create_or_find_experiment(experiment_name: str):
     """
     establish_mlflow_connection()
     s3_bucket = "s3://mi4people-soil-project/mlflow-artifacts/"
-
+    # end existing runs to cancel weird side-effects
     mlflow.end_run()
     existing_experiment = mlflow.get_experiment_by_name(experiment_name)
     if existing_experiment:
@@ -87,5 +87,5 @@ def get_latest_model(model_name: str, model_version: str = "latest"):
 
 
 if __name__ == "__main__":
-    # Example: Get latest pytorch model from s3 which is registered in our mlflow-db  
+    # Example: Get latest pytorch model from s3 which is registered in our mlflow-db
     get_latest_model("ben_res50")

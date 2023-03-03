@@ -1,12 +1,3 @@
-# For the general context, see  also:
-#
-# * A deepsense.ai blog post [Keras vs. PyTorch - Alien vs. Predator recognition with transfer learning](https://deepsense.ai/keras-vs-pytorch-avp-transfer-learning) in which we compare and contrast Keras and PyTorch approaches.
-# * Repo with code: [github.com/deepsense-ai/Keras-PyTorch-AvP-transfer-learning](https://github.com/deepsense-ai/Keras-PyTorch-AvP-transfer-learning).
-# * Free event: [upcoming webinar (10 Oct 2018)](https://www.crowdcast.io/e/KerasVersusPyTorch/register), in which we walk trough the code (and you will be able to ask questions).
-#
-# ### 1. Import dependencies
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -20,11 +11,14 @@ import torch.optim as optim
 
 
 import torchvision
+import mlflow
 
 import src.data.bigearthnet_datapipes as be_pipes
 import src.data.general_datapipes as pipes
 from src.globals import LABELS_TO_INDS
 from src.infrastructure.aws_infrastructure import upload_file_to_s3, download_from_s3, spot_instance_terminating
+import src.infrastructure.mlflow_logging as ml_logging
+from src.models.training_utils import get_latest_weights
 
 
 # ### 2. Create PyTorch data generators
@@ -33,7 +27,7 @@ from src.infrastructure.aws_infrastructure import upload_file_to_s3, download_fr
 # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 #                                  std=[0.229, 0.224, 0.225])
 
-# TODO Augmentations in dataloader?
+# TODO Augmentations in dataloader/pipe?
 # data_transforms = {
 #     'train':
 #     transforms.Compose([
@@ -51,29 +45,10 @@ from src.infrastructure.aws_infrastructure import upload_file_to_s3, download_fr
 #     ]),
 # }
 
-# image_datasets = {
-#     'train':
-#     datasets.ImageFolder(input_path + 'train', data_transforms['train']),
-#     'validation':
-#     datasets.ImageFolder(input_path + 'validation', data_transforms['validation'])
-# }
-
-# dataloaders = {
-#     'train':
-#     torch.utils.data.DataLoader(image_datasets['train'],
-#                                 batch_size=32,
-#                                 shuffle=True,
-#                                 num_workers=0),  # for Kaggle
-#     'validation':
-#     torch.utils.data.DataLoader(image_datasets['validation'],
-#                                 batch_size=32,
-#                                 shuffle=False,
-#                                 num_workers=0)  # for Kaggle
-# }
+mlflow_experiment = ml_logging.start_auto_logging("test3", "pytorch")
 
 folders = pipes.get_s3_folder_content()
 folders = list(folders)
-print(folders)
 num_classes = len(LABELS_TO_INDS.keys())
 
 datapipe = be_pipes.get_bigearth_pca_pipe(folders[:40])
@@ -81,10 +56,11 @@ train_pipe, test_pipe = pipes.split_pipe_to_train_test(datapipe, 0.2)
 print(len(list(train_pipe)))
 print("-------------------")
 print(len(list(test_pipe)))
-# TODO persist? Traintestval-split
+# TODO persist Traintestval-split
 dataloaders = {
     "train": torch.utils.data.DataLoader(dataset=train_pipe, batch_size=2),
     "test": torch.utils.data.DataLoader(dataset=test_pipe, batch_size=2),
+    # val
 }
 
 # ### 3. Create the network
@@ -104,12 +80,18 @@ optimizer = optim.Adam(model.fc.parameters())
 
 
 # ### 4. Train the model
-def train_model(model, criterion, optimizer, num_epochs=1, starting_epoch=1, state_dict=None):
-    if state_dict:
-        model.load_state_dict(dl_model_path)
-    # TODO set epoch to that of loaded dict
-    for epoch in range(num_epochs):
-        print("Epoch {}/{}".format(epoch + 1, num_epochs))
+def train_model(model, criterion, optimizer, total_epochs=1, starting_epoch=0, model_path=None, mlflow_experiment=None):
+    if model_path:
+        try:
+            model.load_state_dict(model_path)
+        # TODO load latest model:
+        except:
+            pass
+            # TODO change params to get model name
+            #model = ml_logging.get_latest_model()
+        print(f"Resuming training from earlier model.")
+    for epoch in range(starting_epoch, total_epochs):
+        print("Epoch {}/{}".format(epoch, total_epochs))
         print("-" * 10)
 
         for phase in ["train", "test"]:
@@ -126,7 +108,7 @@ def train_model(model, criterion, optimizer, num_epochs=1, starting_epoch=1, sta
                     # logging.warning("Spot instances will be terminated soon. Saving weights to s3.")
                     # model_path = os.path.join(os.getcwd(), 'models/weights.h5')
                     # torch.save(model_trained.state_dict(), model_path)
-                    # upload_file_to_s3(bucket="mi4people-soil-project", local_path=model_path, remote_path=f"pytorch_models/ben_{epoch}.h5")
+                    # mlflow.pytorch.log_model(model, f"ben_res50_epoch_{epoch}", registered_model_name="ben_res50")
                     # TODO further cleanup: shut down?
 
                 inputs = sample["data"]
@@ -143,10 +125,16 @@ def train_model(model, criterion, optimizer, num_epochs=1, starting_epoch=1, sta
                     loss.backward()
                     optimizer.step()
 
-                # TODO running metric
+                # TODO running metric (eg accuracy)
                 _, preds = torch.max(outputs, 1)
                 running_loss += loss.item() * inputs.size(0)
-                # running_corrects += torch.sum(preds == labels.data)
+                # log loss to db
+                mlflow.log_metric("running_loss", running_loss)
+        # save model to s3 and register it (importtant to retrieve it later)
+        # TODO IMPORTANT: change model name to something which is different for each experiment, but also memorable/ automatically callable by the process managing spot instance orchestration
+        mlflow.pytorch.log_model(model, f"ben_res50_epoch_{epoch}", registered_model_name="ben_res50")
+        print("Finished Epoch, logged model")
+            # running_corrects += torch.sum(preds == labels.data)
 
             # epoch_loss = running_loss / len(image_datasets[phase])
             # epoch_acc = running_corrects.double() / len(image_datasets[phase])
@@ -154,24 +142,27 @@ def train_model(model, criterion, optimizer, num_epochs=1, starting_epoch=1, sta
             # print('{} loss: {:.4f}, acc: {:.4f}'.format(phase,
             #                                            epoch_loss,
             #                                            epoch_acc))
+    # mlflow.pytorch.log_model(model)
     return model
 
 
-# model_trained = train_model(model, criterion, optimizer, num_epochs=1)
+model_trained = train_model(model, criterion, optimizer, total_epochs=3, mlflow_experiment=mlflow_experiment)
+exit()
 
-# ### 5. Save and load the model
+# ### 5. Save model locally
 # model_path = os.path.join(os.getcwd(), 'models/weights.h5')
 # torch.save(model_trained.state_dict(), model_path)
-# upload_file_to_s3(bucket="mi4people-soil-project", local_path=model_path, remote_path="pytorch_models/weights.h5")
 
-dl_model_path = os.path.join(os.getcwd(), 'models/dl_weights.h5')
-# download_from_s3(bucket="mi4people-soil-project", local_path=dl_model_path, remote_path="pytorch_models/weights.h5")
-
+# ### 6.1 Either load a local model:
 model = models.resnet50(pretrained=False).to(device)
 model.fc = nn.Sequential(
     nn.Linear(2048, 128), nn.ReLU(inplace=True), nn.Linear(128, 43)
 ).to(device)
-model.load_state_dict(torch.load(dl_model_path))
+model.load_state_dict(torch.load(model_path))
+# ### 6.2 Or get it from the bucket with mlflow:
+model = ml_logging.get_latest_model("ben_res50", "latest")
+
+
 
 # # ### 6. Make predictions on sample test images
 for sample in dataloaders["test"]:
@@ -185,8 +176,9 @@ for sample in dataloaders["test"]:
 
 
 # TODOs after local todos:
-# use mlflow callback
 # How/where to run online
-# spot-instance callbacks
-# save weights to s3 in callback
+# Test / ask abdellaziz if spot-instance callbacks are right like this
+# save weights to s3 in callback & load latest weights
 # parametrization
+# modularize these steps
+# save logs?

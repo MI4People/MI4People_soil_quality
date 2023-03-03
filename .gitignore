@@ -91,6 +91,7 @@ target/
 # Credentials for managed mysql & s3
 aws_credentials.yaml
 
-# Artifacts of manual mlflow-logging
+# Artifacts of manual mlflow-logging and training
 /mlruns
-.pkl
+*.pkl
+*.h5

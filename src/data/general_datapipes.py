@@ -16,6 +16,14 @@ def get_s3_folder_content(bucket_path=f"s3://mi4people-soil-project/BigEarthNet-
 
 
 def split_pipe_to_train_test(datapipe, test_percentage):
+    # TODO extend to train-test-val
+    # TODO build something similar for geospatial split?
+    """Generates two pipes from one, splitting the output to create a train-test-split.
+
+    Args:
+        datapipe (_type_): The original pipe
+        test_percentage (_type_): Fraction of data used for the test-set.
+    """
     def assign_sample(n):
         return random.uniform(0, 1) < test_percentage
     train_pipe, test_pipe = datapipe.demux(num_instances=2, classifier_fn=assign_sample)

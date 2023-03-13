@@ -109,3 +109,28 @@ def get_bigearth_pca_pipe(folders):
     img_pipe = img_pipe.map(combine_and_resize_bands, input_col="data")
     img_pipe = img_pipe.map(pca_on_label_and_data, input_col="data")
     return img_pipe
+
+
+def get_bigearth_no_pca_pipe(folders):
+    """Given a list of paths (in a bucket), returns a datapipe with simple 3-component PCA performed on images.
+        May be passed in the contruction of a dataloader in  the dataset argument.
+
+    Args:
+        folders (list): List of folders to process. Each folder must contain 12 tifs, one for each band and one json with metadata.
+
+    Returns:
+        torch.utils.data.datapipes.iter.callable.MapperIterDataPipe: Iterable datapipe yielding dicts with keys "data" and "label".
+            Data is a single numpy array of the 3 first PCs of all bands, label a list of integers from /data/raw/bigearth_labels.json.
+    """
+    img_pipe = dp.iter.IterableWrapper(folders)
+    img_pipe = img_pipe.list_files_by_fsspec()
+    img_pipe = img_pipe.groupby(group_key_fn=group_key_by_folder, group_size=13)
+    img_pipe = img_pipe.map(chunk_to_dataloader_dict)
+    img_pipe = img_pipe.map(read_json_from_path, input_col="label")
+    img_pipe = img_pipe.map(get_labels, input_col="label")
+    img_pipe = img_pipe.map(get_label_inds, input_col="label")
+    img_pipe = img_pipe.map(labels_to_multi_hot_vector, input_col="label")
+    img_pipe = img_pipe.map(read_imgs_from_paths, input_col="data")
+    img_pipe = img_pipe.map(combine_and_resize_bands, input_col="data")
+    # img_pipe = img_pipe.map(pca_on_label_and_data, input_col="data")
+    return img_pipe

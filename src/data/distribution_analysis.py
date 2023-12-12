@@ -6,9 +6,12 @@ import imageio.v2 as imageio
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import yaml
 
-os.environ["AWS_ACCESS_KEY_ID"] = "AKIASUMSMN7USSB6MHHC"
-os.environ["AWS_SECRET_ACCESS_KEY"] = "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"
+with open('../../aws_credentials.yaml', 'r') as file:
+    credentials = yaml.safe_load(file)
+os.environ["AWS_ACCESS_KEY_ID"] = credentials["s3"]["public_key"]
+os.environ["AWS_SECRET_ACCESS_KEY"] = credentials["s3"]["secret_key"]
 os.environ["AWS_REGION"] = "eu-central-1"
 
 # in total about 1 205 000 subdirectories -> 1k samples should be enough

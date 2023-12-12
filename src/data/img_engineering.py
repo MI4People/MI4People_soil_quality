@@ -44,4 +44,4 @@ def get_first_n_pcs(img: np.array, num_components: int):
             PC_2d[i, :, :], np.zeros(img.shape), 0, 255, cv2.NORM_MINMAX
         )
 
-    return PC_2d_Norm[: num_components + 1, :, :]
+    return PC_2d[: num_components + 1, :, :]

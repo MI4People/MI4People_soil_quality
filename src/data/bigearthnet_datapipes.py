@@ -4,7 +4,7 @@ import torchdata.datapipes as dp
 import json
 import fsspec
 from PIL import Image
-from src.globals import LABELS_TO_INDS
+#from src.globals import LABELS_TO_INDS
 from src.data.ingestion import combine_and_resize_bands
 from src.data.img_engineering import get_first_n_pcs
 

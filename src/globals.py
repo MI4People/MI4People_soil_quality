@@ -21,4 +21,4 @@ def get_bigearth_labels_from_json() -> Union[dict, None]:
         warnings.warn("If you want to make use of global variable LABELS_TO_INDS containing all labels for the BigEarthNet-v1.0 (BEN) dataset, you need to execute the notebook `bigearthnet_label_creation.ipnyb` first.")
         return None
 
-LABELS_TO_INDS = get_bigearth_labels_from_json()
+#LABELS_TO_INDS = get_bigearth_labels_from_json()

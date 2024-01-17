@@ -1,5 +1,6 @@
 import pandas as pd
 import intake
+from typing import List
 import numpy as np
 import cv2
 from src.globals import PROJECT_DIR, SRC_DIR, CATALOG
@@ -30,7 +31,7 @@ def delete_broken_rows(df: pd.DataFrame):
     return df
 
 
-def combine_and_resize_bands(arrays: list[np.array], max_res=(120, 120)):
+def combine_and_resize_bands(arrays: List[np.array], max_res=(120, 120)):
     """Combines bands into one array, upscaling each band to max_res.
 
     Args:

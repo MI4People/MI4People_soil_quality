@@ -13,7 +13,7 @@ CATALOG = Path(__file__).parents[1] / "catalog.yaml"
 def get_bigearth_labels_from_json() -> Union[dict, None]:
     """Returns all potential labels for BigEarthNet dataset if available"""
     try:
-        with open(DATA_DIR / "01_raw/ben_labels.pickle", "rb") as label_file:
+        with open(DATA_DIR / "00_prerequisites/ben_labels.pickle", "rb") as label_file:
             ind_to_labels = pickle.load(label_file)
             labels_to_ind = {l: int(i) for (i, l) in ind_to_labels.items()} if ind_to_labels else None
         return labels_to_ind

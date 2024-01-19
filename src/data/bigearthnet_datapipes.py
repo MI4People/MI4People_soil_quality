@@ -106,7 +106,8 @@ def get_bigearth_pca_pipe(folders):
     img_pipe = img_pipe.map(get_label_inds, input_col="label")
     img_pipe = img_pipe.map(labels_to_multi_hot_vector, input_col="label")
     img_pipe = img_pipe.map(read_imgs_from_paths, input_col="data")
-    img_pipe = img_pipe.map(combine_and_resize_bands, input_col="data")
+    img_pipe = img_pipe.map(combine_and_resize_bands, input_col="data") 
+    # TODO: Add normalization as img_pipe.map here
     img_pipe = img_pipe.map(pca_on_label_and_data, input_col="data")
     return img_pipe
 

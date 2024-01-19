@@ -41,9 +41,29 @@ def combine_and_resize_bands(arrays: List[np.array], max_res=(120, 120)):
     Returns:
         np.array: Concatenated & resized bands.
     """
+    
     result = np.zeros(shape=(*max_res, len(arrays)))
     for i, array in enumerate(arrays):
         assert array.shape[0] <= max_res[0]
         assert array.shape[1] <= max_res[1]
         result[:, :, i] = cv2.resize(array, dsize=max_res)
+
+    # TODO: Add additional transformations of the input data here
+    # Suggestion: Make of of library torchvision.transforms as in the example but not mandatory, other approaches should also be possible
+    # Think about if some transformations should only be applied to training data and not to validation data. 
+    # If so, think about if train_test-split should be done already before that step
+        
+    # Example:
+    # data_transforms = {
+    #     'train':
+    #     transforms.Compose([
+    #         transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)), # TODO: an idea, check if necessary
+    #         transforms.RandomHorizontalFlip(), # TODO: an idea, check if necessary
+    #         transforms.ToTensor(), # TODO: check if necessary or if it should be done later
+    #     ]),
+    #     'validation':
+    #     transforms.Compose([
+    #         transforms.ToTensor(), # TODO: check if necessary or if it should be done later
+    #     ]),
+    # }
     return result

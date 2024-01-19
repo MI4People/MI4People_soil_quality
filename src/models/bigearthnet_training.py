@@ -23,36 +23,13 @@ from src.models.training_utils import get_latest_weights
 
 # ### 2. Create PyTorch data generators
 
-# TODO
-# normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                                  std=[0.229, 0.224, 0.225])
-
-# TODO Augmentations in dataloader/pipe?
-# data_transforms = {
-#     'train':
-#     transforms.Compose([
-#         transforms.Resize((224,224)), # already done in pipeline
-#         transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)), # TODO: check
-#         transforms.RandomHorizontalFlip(), # TODO: check
-#         transforms.ToTensor(), # TODO: check
-#         normalize # TODO in pipeline
-#     ]),
-#     'validation':
-#     transforms.Compose([
-#         transforms.Resize((224,224)),
-#         transforms.ToTensor(),
-#         normalize
-#     ]),
-# }
-
 # TODO: Set new test name
-mlflow_experiment = ml_logging.start_auto_logging("test5", "pytorch")
+# mlflow_experiment = ml_logging.start_auto_logging("test5", "pytorch")
 
 folders = pipes.get_s3_folder_content()
 
 # TODO: Rewrite code so that it will run in AWS and remove limitation when running pipeline for training in AWS
 datapipe = be_pipes.get_bigearth_pca_pipe(folders[:40])
-# Idea: Transformations via pipeline here
 train_pipe, test_pipe = pipes.split_pipe_to_train_test(datapipe, 0.2)
 print(len(list(train_pipe)))
 print("-------------------")

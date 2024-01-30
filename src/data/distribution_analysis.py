@@ -1,5 +1,4 @@
 from torchdata.datapipes.iter import IterableWrapper
-from src.data.img_engineering import get_first_n_pcs
 from src.data.ingestion import combine_and_resize_bands
 import os
 import imageio.v2 as imageio
@@ -35,14 +34,13 @@ def get_mean_std_for_norm(sample_size: int):
                 tif_array = imageio.imread(fd)
                 bands.append(tif_array)
         bands_resized = combine_and_resize_bands(bands, max_res=(120, 120))
-        bands_pca = get_first_n_pcs(bands_resized, 3)
-        bands_pca = bands_pca.reshape(3, -1)
+        bands_pca = bands_resized.transpose(2, 0, 1).reshape(12, 14400)
         bands_pca_all.append(bands_pca)
     bands_pca_all = np.array(bands_pca_all)
 
     mean = []
     std = []
-    for i in range(3):
+    for i in range(12):
         band_pca_i_all = bands_pca_all[:,i]
         percentile_1st = np.percentile(band_pca_i_all, 1)
         percentile_99th = np.percentile(band_pca_i_all, 99)
@@ -50,9 +48,41 @@ def get_mean_std_for_norm(sample_size: int):
         std.append(percentile_99th-percentile_1st)
     return mean, std
 
+
+def means_stds_analysis_plot(means, stds):
+    # Calculate the average mean and standard deviation for the means
+    avg_means = np.mean(means, axis=0)
+    std_of_means = np.std(means, axis=0)
+
+    # Calculate the average mean and standard deviation for the stds
+    avg_stds = np.mean(stds, axis=0)
+    std_of_stds = np.std(stds, axis=0)
+
+    # Create a figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+    # Plotting the error bars for means
+    ax1.errorbar(range(1, len(avg_means) + 1), avg_means, yerr=std_of_means, fmt='o', capsize=5, color='tab:red')
+    ax1.set_title('Error Analysis for Means of Bands')
+    ax1.set_xlabel('Bands')
+    ax1.set_ylabel('Mean Value')
+    ax1.set_xticks(range(1, len(avg_means) + 1))
+
+    # Plotting the error bars for standard deviations
+    ax2.errorbar(range(1, len(avg_stds) + 1), avg_stds, yerr=std_of_stds, fmt='^', capsize=5, color='tab:blue')
+    ax2.set_title('Error Analysis for Stds of Bands')
+    ax2.set_xlabel('Bands')
+    ax2.set_ylabel('Standard Deviation Value')
+    ax2.set_xticks(range(1, len(avg_stds) + 1))
+
+    plt.tight_layout()
+    plt.savefig("means_stds_analysis.png")
+
+    return avg_means, avg_stds
+
 if __name__ == "__main__":
-    num_runs = 10
-    sample_size = 1000
+    num_runs = 5
+    sample_size = 5 #1000
     means = []
     stds = []
     for i in range(num_runs):
@@ -61,23 +91,6 @@ if __name__ == "__main__":
         stds.append(std)
     means = np.array(means)
     stds = np.array(stds)
-    np.save("means.npy", means)
-    np.save("stds.npy", stds)
-
-    plot_m_means = np.mean(means, axis=0)
-    plot_e_means = np.std(means, axis=0)
-    plt.errorbar(["Band 1", "Band 2", "Band 3"], plot_m_means, yerr=plot_e_means, fmt='o', capsize=5)
-    plt.title('Error Analysis for means of PCA bands')
-    plt.xlabel('PCA bands')
-    plt.ylabel('Mean Value')
-    plt.savefig("means_analysis.png")
-
-    plt.cla()
-
-    plot_m_stds = np.mean(stds, axis=0)
-    plot_e_stds = np.std(stds, axis=0)
-    plt.errorbar(["Band 1", "Band 2", "Band 3"], plot_m_stds, yerr=plot_e_stds, fmt='o', capsize=5)
-    plt.title('Error Analysis for stds of PCA bands')
-    plt.xlabel('PCA bands')
-    plt.ylabel('Standard deviation Value')
-    plt.savefig("stds_analyses.png")
+    final_means, final_stds = means_stds_analysis_plot(means, stds)
+    np.save("means.npy", final_means)
+    np.save("stds.npy", final_stds)

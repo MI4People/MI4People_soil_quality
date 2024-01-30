@@ -45,3 +45,10 @@ def get_first_n_pcs(img: np.array, num_components: int):
         )
 
     return PC_2d[: num_components + 1, :, :]
+
+
+def normalize_bands_with_means_stds(img: np.array, means: np.array, stds: np.array):
+    means = means.reshape(1, 1, -1)
+    stds = stds.reshape(1, 1, -1)
+    normalized_img = (img - means) / stds
+    return normalized_img

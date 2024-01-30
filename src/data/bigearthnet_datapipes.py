@@ -6,7 +6,7 @@ import fsspec
 from PIL import Image
 #from src.globals import LABELS_TO_INDS
 from src.data.ingestion import combine_and_resize_bands
-from src.data.img_engineering import get_first_n_pcs
+from src.data.img_engineering import get_first_n_pcs, normalize_bands_with_means_stds
 
 
 """ Functions for torchdata datapipes specific for the bigearthnet dataset as well as pipeline definitions.
@@ -74,6 +74,11 @@ def pca_on_label_and_data(combined_image):
     # Perform PCA on a single array of shape (height, width, bands) to (height, width, 3).
     return get_first_n_pcs(combined_image, num_components=3)
 
+def normalize_bands(combined_image):
+    means = np.load("means.npy")
+    stds = np.load("stds.npy")
+    return normalize_bands_with_means_stds(combined_image, means, stds)
+
 
 def get_bigeartnet_label_pipe(folders):
     # Stream only annotations-jsons
@@ -108,6 +113,7 @@ def get_bigearth_pca_pipe(folders):
     img_pipe = img_pipe.map(read_imgs_from_paths, input_col="data")
     img_pipe = img_pipe.map(combine_and_resize_bands, input_col="data") 
     # TODO: Add normalization as img_pipe.map here
+    img_pipe = img_pipe.map(normalize_bands, input_col="data")
     img_pipe = img_pipe.map(pca_on_label_and_data, input_col="data")
     return img_pipe
 

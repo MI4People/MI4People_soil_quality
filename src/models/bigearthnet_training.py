@@ -24,7 +24,7 @@ from src.models.training_utils import get_latest_weights
 # ### 2. Create PyTorch data generators
 
 # TODO: Set new test name
-# mlflow_experiment = ml_logging.start_auto_logging("test5", "pytorch")
+mlflow_experiment = ml_logging.start_auto_logging("test6", "pytorch")
 
 folders = pipes.get_s3_folder_content()
 

@@ -54,7 +54,8 @@ def start_auto_logging(experiment: str | mlflow.entities.experiment.Experiment, 
     """
     establish_mlflow_connection()
     if isinstance(experiment, (str, mlflow.entities.experiment.Experiment)):
-        create_or_find_experiment(experiment)
+        # Returns always an Experiment object
+        experiment = create_or_find_experiment(experiment)
 
     if model_library.lower() == "sklearn":
         mlflow.sklearn.autolog()
